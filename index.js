@@ -15,8 +15,10 @@ const app = express();
 
 app.use(
   cors({
+    origin: process.env.CLIENT_URL,
     credentials: true,
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -29,9 +31,8 @@ const sessionOptions = {
 if (process.env.SERVER_ENV !== "development") {
   sessionOptions.proxy = true;
   sessionOptions.cookie = {
-    sameSite: "lax",
-    secure: false,
-    domain: process.env.SERVER_URL,
+    sameSite: "none",
+    secure: true,
   };
 }
 
