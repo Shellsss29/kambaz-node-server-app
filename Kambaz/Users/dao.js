@@ -1,31 +1,30 @@
 import { v4 as uuidv4 } from "uuid";
+import model from "./model.js";
 
-export default function UsersDao(db) {
-  let { users } = db;
-
-  const createUser = (user) => {
+export default function UsersDao() {
+  const createUser = async (user) => {
     const newUser = { ...user, _id: uuidv4() };
-    users = [...users, newUser];
-    return newUser;
+    return await model.create(newUser);
   };
 
-  const findAllUsers = () => users;
+  const findAllUsers = async () => model.find();
 
-  const findUserById = (userId) => users.find((user) => user._id === userId);
+  const findUserById = async (userId) => model.findById(userId);
 
-  const findUserByUsername = (username) =>
-    users.find((user) => user.username === username);
+  const findUserByUsername = async (username) =>
+    model.findOne({ username });
 
-  const findUserByCredentials = (username, password) =>
-    users.find(
-      (user) => user.username === username && user.password === password
-    );
+  const findUserByCredentials = async (username, password) =>
+    model.findOne({ username, password });
 
-  const updateUser = (userId, user) =>
-    (users = users.map((u) => (u._id === userId ? user : u)));
+  const findUsersByRole = async (role) =>
+    model.find({ role });
 
-  const deleteUser = (userId) =>
-    (users = users.filter((u) => u._id !== userId));
+  const updateUser = async (userId, user) =>
+    model.updateOne({ _id: userId }, { $set: user });
+
+  const deleteUser = async (userId) =>
+    model.findByIdAndDelete(userId);
 
   return {
     createUser,
@@ -35,5 +34,6 @@ export default function UsersDao(db) {
     findUserByCredentials,
     updateUser,
     deleteUser,
+    findUsersByRole,
   };
 }

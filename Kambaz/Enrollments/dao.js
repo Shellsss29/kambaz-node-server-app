@@ -1,46 +1,42 @@
 import { v4 as uuidv4 } from "uuid";
+import model from "./model.js";
+import usersModel from "../Users/model.js";
+import coursesModel from "../Courses/model.js";
 
-export default function EnrollmentsDao(db) {
-  function enrollUserInCourse(userId, courseId) {
-    const { enrollments } = db;
-    const alreadyEnrolled = enrollments.some(
-      (e) => e.user === userId && e.course === courseId
-    );
-    if (alreadyEnrolled) return { status: "already enrolled" };
+export default function EnrollmentsDao() {
+  const enrollUserInCourse = async (userId, courseId) => {
+    const exists = await model.findOne({ user: userId, course: courseId });
+    if (exists) return { status: "already enrolled" };
 
-    const newEnrollment = {
+    const enrollment = await model.create({
       _id: uuidv4(),
       user: userId,
       course: courseId,
-    };
-    db.enrollments.push(newEnrollment);
-    return newEnrollment;
-  }
+    });
 
-  function unenrollUserFromCourse(userId, courseId) {
-    const beforeCount = db.enrollments.length;
-    db.enrollments = db.enrollments.filter(
-      (e) => !(e.user === userId && e.course === courseId)
-    );
-    const afterCount = db.enrollments.length;
-    return { status: beforeCount === afterCount ? "not found" : "unenrolled" };
-  }
+    return enrollment;
+  };
 
-  function findEnrollmentsForUser(userId) {
-    const { enrollments, courses } = db;
-    const enrolledCourseIds = enrollments
-      .filter((e) => e.user === userId)
-      .map((e) => e.course);
-    return courses.filter((c) => enrolledCourseIds.includes(c._id));
-  }
+  const unenrollUserFromCourse = async (userId, courseId) => {
+    const result = await model.deleteOne({ user: userId, course: courseId });
 
-  function findUsersForCourse(courseId) {
-    const { enrollments, users } = db;
-    const enrolledUserIds = enrollments
-      .filter((e) => e.course === courseId)
-      .map((e) => e.user);
-    return users.filter((u) => enrolledUserIds.includes(u._id));
-  }
+    return result.deletedCount === 0
+      ? { status: "not found" }
+      : { status: "unenrolled" };
+  };
+
+  const findEnrollmentsForUser = async (userId) => {
+    const enrollments = await model.find({ user: userId });
+    const courseIds = enrollments.map((e) => e.course);
+    return await coursesModel.find({ _id: { $in: courseIds } });
+  };
+
+  const findUsersForCourse = async (courseId) => {
+    const enrollments = await model.find({ course: courseId });
+    const userIds = enrollments.map((e) => e.user);
+
+    return await usersModel.find({ _id: { $in: userIds } });
+  };
 
   return {
     enrollUserInCourse,
